@@ -26,32 +26,32 @@ void ready() {
 }
 
 /*
- * GCODE empfangen und weiterleiten
- */
+   GCODE empfangen und weiterleiten
+*/
 void loop() {
   // empfangen
-  if( Serial.available() ) {
+  if ( Serial.available() ) {
     char c = Serial.read(); // empfang speichern
-    Serial.print("habe '" + String(c) + "' empfangen!"); 
-    
+    Serial.print("habe '" + String(c) + "' empfangen!");
+
     // speichern
-    if( bufferAuslastung < MAX_BUF ) {
+    if ( bufferAuslastung < MAX_BUF ) {
       buffer[bufferAuslastung++] = c; // ????????????????????????
-      }
+    }
 
     // Nachrichten ende
-    if( c == '\n' ) {
+    if ( c == '\n' ) {
       Serial.print("Befehl ende!");
       buffer[bufferAuslastung] = 0; // ?????????????????????????
       processCommand(); // Nachricht verarbeiten
       ready();
-      }
     }
+  }
 }
 
 /*
- * Verarbeitung des empfangenen Komandos
- */
+   Verarbeitung des empfangenen Komandos
+*/
 void processCommand() {
-  
-  }
+
+}
