@@ -42,9 +42,16 @@ void loop() {
     // Nachrichten ende
     if( c == '\n' ) {
       Serial.print("Befehl ende!");
-      buffer[bufferAuslastung] = 0;
-      // WEITER VERARBEITUNG!!!
+      buffer[bufferAuslastung] = 0; // ?????????????????????????
+      processCommand(); // Nachricht verarbeiten
       ready();
       }
     }
 }
+
+/*
+ * Verarbeitung des empfangenen Komandos
+ */
+void processCommand() {
+  
+  }
