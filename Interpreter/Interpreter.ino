@@ -43,15 +43,27 @@ void loop() {
     if ( c == '\n' ) {
       Serial.print("Befehl ende!");
       buffer[bufferAuslastung] = 0; // ?????????????????????????
-      processCommand(); // Nachricht verarbeiten
+      //processCommand(); // Nachricht verarbeiten
       ready();
     }
   }
 }
 
 /*
-   Verarbeitung des empfangenen Komandos
+    Funktion um nach bestimmtem char in Buffer suchen und Zahl dahinter zurückzugeben
 */
-void processCommand() {
+float processCommand(char suchCode) {
+  int bufferSize = sizeof(buffer);
+  float errorRueckgabe = -999.99;
 
+  for (int i = 0; i < bufferSize; i++) {
+    if (buffer[i] == suchCode) {
+      return atof(i + 1); // Zahlen nach suchCode als Float zurück geben
+    }
+  }
+  return errorRueckgabe;
 }
+
+/*
+    Verarbeitung des empfangenen Komandos
+*/
