@@ -67,3 +67,11 @@ float processCommand(char suchCode) {
 /*
     Verarbeitung des empfangenen Komandos
 */
+
+// G-code
+float switchZahl = processCommand('G');
+switch (switchZahl) {
+case -999.99: break;
+//case 0: ;
+default: break;
+}
