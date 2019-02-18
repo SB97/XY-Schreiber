@@ -10,11 +10,18 @@
 char buffer[MAX_BUF]; // zwischenablage
 int bufferAuslastung; // belegung der zwischenablage
 
+// Plotter
+#define PEN_PIN (2)
+float penZ = 0;
+
 void setup() {
   // Serielle verbindung starten
   Serial.begin(BAUD);
   Serial.print(F("Start!"));
   ready();
+
+  // Pen
+  pinMode(PEN_PIN, OUTPUT);
 }
 
 /*
@@ -22,7 +29,7 @@ void setup() {
 */
 void ready() {
   bufferAuslastung = 0; // Nachrichtenspeicher leeren
-  Serial.print(F("> ")); // output um zu sehen wann der Arduino bereit für einen Befehl ist
+  Serial.print(F("\n> ")); // output um zu sehen wann der Arduino bereit für einen Befehl ist
 }
 
 /*
@@ -32,7 +39,12 @@ void loop() {
   // empfangen
   if ( Serial.available() ) {
     char c = Serial.read(); // empfang speichern
-    Serial.print("habe '" + String(c) + "' empfangen!");
+    
+    if (String(c) == "\n") {
+      Serial.print("\nhabe 'new line' empfangen!");
+    } else {
+      Serial.print("\nhabe '" + String(c) + "' empfangen!");
+    }
 
     // speichern
     if ( bufferAuslastung < MAX_BUF ) {
@@ -41,9 +53,9 @@ void loop() {
 
     // Nachrichten ende
     if ( c == '\n' ) {
-      Serial.print("Befehl ende!");
+      Serial.print("\nBefehl ende!");
       buffer[bufferAuslastung] = 0; // ?????????????????????????
-      //processCommand(); // Nachricht verarbeiten
+      processCommand(); // Nachricht verarbeiten
       ready();
     }
   }
@@ -52,7 +64,7 @@ void loop() {
 /*
     Funktion um nach bestimmtem char in Buffer suchen und Zahl dahinter zurückzugeben
 */
-float processCommand(char suchCode) {
+float parseCode(char suchCode) {
   int bufferSize = sizeof(buffer);
   float errorRueckgabe = -999.99;
 
@@ -64,14 +76,47 @@ float processCommand(char suchCode) {
   return errorRueckgabe;
 }
 
+boolean commandContainsChar(char suchCode) {
+  int bufferSize = sizeof(buffer);
+  for (int i = 0; i < bufferSize; i++) {
+    if (buffer[i] == suchCode) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /*
     Verarbeitung des empfangenen Komandos
 */
-
+void processCommand() {
 // G-code
-float switchZahl = processCommand('G');
+int switchZahl = parseCode('G');
 switch (switchZahl) {
-case -999.99: break;
-//case 0: ;
+case 28:
+  if (commandContainsChar('Z')) {
+    drivePen(-999.99);
+  } else if (commandContainsChar('X')) {
+    // X 0 fahren
+  } else if (commandContainsChar('Y')) {
+    // Y 0 fahren
+  }
+case -999:
+  break;
+  //case 0: ;
 default: break;
+}
+}
+
+void drivePen(float newZ) {
+  if (newZ != penZ) {
+    // Stift hoch fahren
+    if (newZ > penZ) {
+      digitalWrite(PEN_PIN, HIGH);
+      penZ = newZ;
+    } else {
+      digitalWrite(PEN_PIN, LOW);
+      penZ = newZ;
+    }
+  }
 }
