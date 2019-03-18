@@ -17,7 +17,7 @@ float penZ = 0;
 void setup() {
   // Serielle verbindung starten
   Serial.begin(BAUD);
-  Serial.print(F("Start!"));
+  Serial.println(("Start!"));
   ready();
 
   // Pen
@@ -29,7 +29,7 @@ void setup() {
 */
 void ready() {
   bufferAuslastung = 0; // Nachrichtenspeicher leeren
-  Serial.print(F("\n> ")); // output um zu sehen wann der Arduino bereit für einen Befehl ist
+  Serial.println("> "); // output um zu sehen wann der Arduino bereit für einen Befehl ist
 }
 
 /*
@@ -37,23 +37,35 @@ void ready() {
 */
 void loop() {
   // empfangen
-  if ( Serial.available() ) {
-    char c = Serial.read(); // empfang speichern
-    
-    if (String(c) == "\n") {
-      Serial.print("\nhabe 'new line' empfangen!");
-    } else {
-      Serial.print("\nhabe '" + String(c) + "' empfangen!");
+if ( Serial.available()) {
+
+  char c = Serial.read(); // empfang speichern
+
+    if (c == '\r\n') {
+      Serial.println("habe 'new line' empfangen!");
+    } else if (c == ';') {
+      Serial.println("habe '#;#' empfangen!");
+    }else {
+      Serial.println("habe '" + String(c) + "' empfangen!");
     }
 
+//Serial.println("###" + String(c) + "###");
     // speichern
     if ( bufferAuslastung < MAX_BUF ) {
       buffer[bufferAuslastung++] = c; // ????????????????????????
     }
 
     // Nachrichten ende
-    if ( c == '\n' ) {
-      Serial.print("\nBefehl ende!");
+    if ( c == ';' ) {
+
+    // TEST
+    Serial.println("Befehls String #");
+    for(int i=0; i<=bufferAuslastung; i++) {
+      Serial.print(buffer[i]);
+      }
+    Serial.println("#");
+      
+      Serial.print("Befehl ende!");
       buffer[bufferAuslastung] = 0; // ?????????????????????????
       processCommand(); // Nachricht verarbeiten
       ready();
@@ -95,6 +107,7 @@ int switchZahl = parseCode('G');
 switch (switchZahl) {
 case 28:
   if (commandContainsChar('Z')) {
+    Serial.println("MIAUUUUUUUUUUU");
     drivePen(-999.99);
   } else if (commandContainsChar('X')) {
     // X 0 fahren
@@ -109,12 +122,14 @@ default: break;
 }
 
 void drivePen(float newZ) {
+  Serial.println("Funktion: drivePen");
   if (newZ != penZ) {
-    // Stift hoch fahren
     if (newZ > penZ) {
+      // Stift hoch fahren
       digitalWrite(PEN_PIN, HIGH);
       penZ = newZ;
     } else {
+      // Stift runter fahren
       digitalWrite(PEN_PIN, LOW);
       penZ = newZ;
     }
