@@ -35,8 +35,8 @@ void loop(void) {
     
     for (dac_value = 0; dac_value < 4096; dac_value = dac_value + 15)
     {
-     // dacX.setVoltage(dac_value, false);
-      dacY.setVoltage(2950, false);
+      dacX.setVoltage(dac_value, false);
+      dacY.setVoltage(dac_value, false);
       delay(100);
 
       Serial.print("DAC Value: ");
