@@ -11,8 +11,8 @@ char buffer[MAX_BUF]; // zwischenablage
 int bufferAuslastung; // belegung der zwischenablage
 
 // Plotter
-#define PEN_PIN (2)
-float penZ = 0;
+#define PEN_PIN (2) // Pin für Pen up/down steuerung
+float penZ = 0; // aktuelle Z "höhe" für vergleich von neuem Wert aus GCODE
 
 void setup() {
   // Serielle verbindung starten
@@ -37,19 +37,19 @@ void ready() {
 */
 void loop() {
   // empfangen
-if ( Serial.available()) {
+  if ( Serial.available()) {
 
-  char c = Serial.read(); // empfang speichern
+    char c = Serial.read(); // empfang speichern
 
     if (c == '\r\n') {
       Serial.println("habe 'new line' empfangen!");
     } else if (c == ';') {
       Serial.println("habe '#;#' empfangen!");
-    }else {
+    } else {
       Serial.println("habe '" + String(c) + "' empfangen!");
     }
 
-//Serial.println("###" + String(c) + "###");
+    //Serial.println("###" + String(c) + "###");
     // speichern
     if ( bufferAuslastung < MAX_BUF ) {
       buffer[bufferAuslastung++] = c; // ????????????????????????
@@ -58,15 +58,22 @@ if ( Serial.available()) {
     // Nachrichten ende
     if ( c == ';' ) {
 
-    // TEST
-    Serial.println("Befehls String #");
-    for(int i=0; i<=bufferAuslastung; i++) {
-      Serial.print(buffer[i]);
+      // TEST
+      Serial.println("Befehls String #");
+      for (int i = 0; i <= bufferAuslastung; i++) {
+        Serial.print(buffer[i]);
       }
-    Serial.println("#");
-      
+      Serial.println("#");
+
       Serial.print("Befehl ende!");
       buffer[bufferAuslastung] = 0; // ?????????????????????????
+
+      Serial.println("Befehls String #");
+      for (int i = 0; i <= bufferAuslastung; i++) {
+        Serial.print(buffer[i]);
+      }
+      Serial.println("#");
+
       processCommand(); // Nachricht verarbeiten
       ready();
     }
@@ -77,18 +84,43 @@ if ( Serial.available()) {
     Funktion um nach bestimmtem char in Buffer suchen und Zahl dahinter zurückzugeben
 */
 float parseCode(char suchCode) {
-  int bufferSize = sizeof(buffer);
-  float errorRueckgabe = -999.99;
+  /*
+    int bufferSize = sizeof(buffer);
+    float errorRueckgabe = -999.99;
 
-  for (int i = 0; i < bufferSize; i++) {
+    for (int i = 0; i < bufferSize; i++) {
     if (buffer[i] == suchCode) {
       return atof(i + 1); // Zahlen nach suchCode als Float zurück geben
     }
+    }
+    return errorRueckgabe;
+  */
+  /*
+    String formatString = "X%u %s";
+    formatString.replace('X',suchCode);
+    //char * formatString = "X%u %s";
+
+    Serial.print(formatString);
+    unsigned int i;
+    //const char rest;
+    String rest;
+    sscanf(buffer, formatString, &i, &rest);
+    Serial.println("sscanf: " + i);
+  */
+  float errorRueckgabe = -999.99;
+  char *ptr = buffer; // start at the beginning of buffer
+  while ((long)ptr > 1 && (*ptr) && (long)ptr < (long)buffer + bufferAuslastung) { // walk to the end
+    if (*ptr == suchCode) { // if you find code on your walk,
+      return atof(ptr + 1); // convert the digits that follow into a float and return it
+    }
+    ptr = strchr(ptr, ' ') + 1; // take a step from here to the letter after the next space
   }
-  return errorRueckgabe;
+  return errorRueckgabe; // end reached, nothing found, return default val.
+  // keine Ahnung wie das Funktioniert... aber es funktioniert... https://github.com/MarginallyClever/GcodeCNCDemo/blob/master/GcodeCNCDemo2Axis/GcodeCNCDemo2Axis.ino
 }
 
 boolean commandContainsChar(char suchCode) {
+  Serial.println("Funktion: commandContainsChar");
   int bufferSize = sizeof(buffer);
   for (int i = 0; i < bufferSize; i++) {
     if (buffer[i] == suchCode) {
@@ -102,36 +134,56 @@ boolean commandContainsChar(char suchCode) {
     Verarbeitung des empfangenen Komandos
 */
 void processCommand() {
-// G-code
-int switchZahl = parseCode('G');
-switch (switchZahl) {
-case 28:
-  if (commandContainsChar('Z')) {
-    Serial.println("MIAUUUUUUUUUUU");
-    drivePen(-999.99);
-  } else if (commandContainsChar('X')) {
-    // X 0 fahren
-  } else if (commandContainsChar('Y')) {
-    // Y 0 fahren
+  Serial.println("processCommand #");
+  for (int i = 0; i <= bufferAuslastung; i++) {
+    Serial.print(buffer[i]);
   }
-case -999:
-  break;
-  //case 0: ;
-default: break;
-}
+  Serial.println("#");
+
+  // G-code
+  int switchZahl = (int) parseCode('G');
+
+  Serial.println("#" + switchZahl);
+
+  switch (switchZahl) {
+    case 28:
+      if (commandContainsChar('Z')) {
+        Serial.println("MIAUUUUUUUUUUU");
+        //drivePen(-999.99);
+        drivePen(parseCode('Z'));
+      } else if (commandContainsChar('X')) {
+        // X 0 fahren
+      } else if (commandContainsChar('Y')) {
+        // Y 0 fahren
+      }
+    case -999:
+      break;
+    //case 0: ;
+    default: break;
+  }
 }
 
+/**
+   Fährt den Stift hoch oder runter.
+*/
 void drivePen(float newZ) {
-  Serial.println("Funktion: drivePen");
+  //Serial.println("Funktion: drivePen");
   if (newZ != penZ) {
     if (newZ > penZ) {
       // Stift hoch fahren
       digitalWrite(PEN_PIN, HIGH);
-      penZ = newZ;
     } else {
       // Stift runter fahren
       digitalWrite(PEN_PIN, LOW);
-      penZ = newZ;
     }
+    penZ = newZ;
   }
+}
+
+/**
+   Pause
+   @input Milisekunden
+*/
+void pause(long ms) {
+  delay(ms / 1000);
 }
