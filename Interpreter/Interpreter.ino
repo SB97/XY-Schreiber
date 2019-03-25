@@ -1,18 +1,58 @@
 /*
    https://www.marginallyclever.com/2013/08/how-to-build-an-2-axis-arduino-cnc-gcode-interpreter/
    Der Interpreter soll per Serieller verbindung GCODE empfangen und auswerten.
+
+   DAC: http://henrysbench.capnfatz.com/henrys-bench/arduino-output-devices/arduino-mcp4725-digital-to-analog-converter-tutorial/
 */
+
+#include <Wire.h>
+#include <Adafruit_MCP4725.h>
 
 // Konstanten
 #define BAUD (57600) // Baudrate 
 #define MAX_BUF (64) // maximale länge der eingehenden Nachrichten
 
+#define X_AUFLOESUNG (4096)
+#define X_LAENGE (200) // mm
+#define X_TRAVEL_TIME (5000) // ms
+#define Y_AUFLOESUNG (4096/2)
+#define Y_LAENGE (150) // mm
+#define Y_TRAVEL_TIME (4000) // ms
+
 char buffer[MAX_BUF]; // zwischenablage
 int bufferAuslastung; // belegung der zwischenablage
+
+// DAC
+Adafruit_MCP4725 dacX; // X Konstruktor
+Adafruit_MCP4725 dacY; // Y Konstruktor
 
 // Plotter
 #define PEN_PIN (2) // Pin für Pen up/down steuerung
 float penZ = 0; // aktuelle Z "höhe" für vergleich von neuem Wert aus GCODE
+float posX = 0; // start X Position -> aktuelle Position
+float posY = 0; // start Y Position -> aktuelle Position
+
+/**
+   X Achsen bewegung
+*/
+void driveX(float xTarget) {
+  float neuePos = posX + xTarget;
+  int dacValue = (X_AUFLOESUNG / X_LAENGE) * neuePos;
+  dacX.setVoltage(dacValue, false);
+  long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1);
+  delay(d);
+}
+
+/**
+   Y Achsen bewegung
+*/
+void driveY(float yTarget) {
+  float neuePos = posY + yTarget;
+  int dacValue = (Y_AUFLOESUNG / Y_LAENGE) * neuePos;
+  dacY.setVoltage(dacValue, false);
+  long d = (long) ((Y_AUFLOESUNG / Y_TRAVEL_TIME) * neuePos * -1);
+  delay(d);
+}
 
 void setup() {
   // Serielle verbindung starten
@@ -21,10 +61,12 @@ void setup() {
   ready();
 
   // Pen
-  pinMode(PEN_PIN, OUTPUT);
+  pinMode(PEN_PIN, OUTPUT); // Pen/Z
+  dacX.begin(0x62); // X Bus Adresse
+  dacY.begin(0x63); // Y Bus Adresse
 }
 
-/*
+/**
    Vorbereitung auf neuen Serielen Input
 */
 void ready() {
@@ -32,7 +74,7 @@ void ready() {
   Serial.println("> "); // output um zu sehen wann der Arduino bereit für einen Befehl ist
 }
 
-/*
+/**
    GCODE empfangen und weiterleiten
 */
 void loop() {
@@ -49,7 +91,6 @@ void loop() {
       Serial.println("habe '" + String(c) + "' empfangen!");
     }
 
-    //Serial.println("###" + String(c) + "###");
     // speichern
     if ( bufferAuslastung < MAX_BUF ) {
       buffer[bufferAuslastung++] = c; // ????????????????????????
@@ -58,21 +99,16 @@ void loop() {
     // Nachrichten ende
     if ( c == ';' ) {
 
-      // TEST
+      // debugging
       Serial.println("Befehls String #");
       for (int i = 0; i <= bufferAuslastung; i++) {
         Serial.print(buffer[i]);
       }
+      Serial.println("");
       Serial.println("#");
 
-      Serial.print("Befehl ende!");
+      // Serial.print("Befehl ende!");
       buffer[bufferAuslastung] = 0; // ?????????????????????????
-
-      Serial.println("Befehls String #");
-      for (int i = 0; i <= bufferAuslastung; i++) {
-        Serial.print(buffer[i]);
-      }
-      Serial.println("#");
 
       processCommand(); // Nachricht verarbeiten
       ready();
@@ -80,33 +116,10 @@ void loop() {
   }
 }
 
-/*
+/**
     Funktion um nach bestimmtem char in Buffer suchen und Zahl dahinter zurückzugeben
 */
-float parseCode(char suchCode) {
-  /*
-    int bufferSize = sizeof(buffer);
-    float errorRueckgabe = -999.99;
-
-    for (int i = 0; i < bufferSize; i++) {
-    if (buffer[i] == suchCode) {
-      return atof(i + 1); // Zahlen nach suchCode als Float zurück geben
-    }
-    }
-    return errorRueckgabe;
-  */
-  /*
-    String formatString = "X%u %s";
-    formatString.replace('X',suchCode);
-    //char * formatString = "X%u %s";
-
-    Serial.print(formatString);
-    unsigned int i;
-    //const char rest;
-    String rest;
-    sscanf(buffer, formatString, &i, &rest);
-    Serial.println("sscanf: " + i);
-  */
+float getFloatFromAssociatedChar(char suchCode) {
   float errorRueckgabe = -999.99;
   char *ptr = buffer; // start at the beginning of buffer
   while ((long)ptr > 1 && (*ptr) && (long)ptr < (long)buffer + bufferAuslastung) { // walk to the end
@@ -134,32 +147,36 @@ boolean commandContainsChar(char suchCode) {
     Verarbeitung des empfangenen Komandos
 */
 void processCommand() {
-  Serial.println("processCommand #");
-  for (int i = 0; i <= bufferAuslastung; i++) {
-    Serial.print(buffer[i]);
-  }
-  Serial.println("#");
 
   // G-code
-  int switchZahl = (int) parseCode('G');
+  int switchZahl = (int) getFloatFromAssociatedChar('G');
 
   Serial.println("#" + switchZahl);
 
   switch (switchZahl) {
     case 28:
       if (commandContainsChar('Z')) {
-        Serial.println("MIAUUUUUUUUUUU");
-        //drivePen(-999.99);
-        drivePen(parseCode('Z'));
-      } else if (commandContainsChar('X')) {
+        drivePen(999.99);
+        //drivePen(getFloatFromAssociatedChar('Z'));
+      }
+      /*else if (commandContainsChar('X')) {
         // X 0 fahren
-      } else if (commandContainsChar('Y')) {
+        } else if (commandContainsChar('Y')) {
         // Y 0 fahren
+        }
+      */
+      if (commandContainsChar('X')) {
+        driveX(0.0);
+      }
+      if (commandContainsChar('Y')) {
+        driveY(0.0);
       }
     case -999:
+      Serial.println("# switch FEHLER!");
       break;
-    //case 0: ;
-    default: break;
+    default:
+      Serial.println("# switch DEFAULT!");
+      break;
   }
 }
 
@@ -180,10 +197,7 @@ void drivePen(float newZ) {
   }
 }
 
-/**
-   Pause
-   @input Milisekunden
-*/
-void pause(long ms) {
-  delay(ms / 1000);
+void setPosition(float x, float y) {
+  posX = x;
+  posY = y;
 }
