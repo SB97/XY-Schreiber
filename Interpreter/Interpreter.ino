@@ -39,8 +39,9 @@ void driveX(float xTarget) {
   float neuePos = posX + xTarget;
   int dacValue = (X_AUFLOESUNG / X_LAENGE) * neuePos;
   dacX.setVoltage(dacValue, false);
-  long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1);
+  long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1));
   delay(d);
+  posX = neuePos;
 }
 
 /**
@@ -50,8 +51,9 @@ void driveY(float yTarget) {
   float neuePos = posY + yTarget;
   int dacValue = (Y_AUFLOESUNG / Y_LAENGE) * neuePos;
   dacY.setVoltage(dacValue, false);
-  long d = (long) ((Y_AUFLOESUNG / Y_TRAVEL_TIME) * neuePos * -1);
+  long d = (long) ((Y_AUFLOESUNG / Y_TRAVEL_TIME) * (neuePos * -1));
   delay(d);
+  posY = neuePos;
 }
 
 void setup() {
@@ -83,9 +85,9 @@ void loop() {
 
     char c = Serial.read(); // empfang speichern
 
-    if (c == '\r\n') {
+   /* if (c == '\r\n') {
       Serial.println("habe 'new line' empfangen!");
-    } else if (c == ';') {
+    } else */if (c == ';') {
       Serial.println("habe '#;#' empfangen!");
     } else {
       Serial.println("habe '" + String(c) + "' empfangen!");
@@ -195,9 +197,4 @@ void drivePen(float newZ) {
     }
     penZ = newZ;
   }
-}
-
-void setPosition(float x, float y) {
-  posX = x;
-  posY = y;
 }
