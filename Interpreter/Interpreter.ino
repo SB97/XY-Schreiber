@@ -85,9 +85,9 @@ void loop() {
 
     char c = Serial.read(); // empfang speichern
 
-   /* if (c == '\r\n') {
-      Serial.println("habe 'new line' empfangen!");
-    } else */if (c == ';') {
+    /* if (c == '\r\n') {
+       Serial.println("habe 'new line' empfangen!");
+      } else */if (c == ';') {
       Serial.println("habe '#;#' empfangen!");
     } else {
       Serial.println("habe '" + String(c) + "' empfangen!");
@@ -153,26 +153,38 @@ void processCommand() {
   // G-code
   int switchZahl = (int) getFloatFromAssociatedChar('G');
 
+  // TODO: die vielen getFloatFromAssociatedChar hier abfertigen
+
   Serial.println("#" + switchZahl);
 
   switch (switchZahl) {
-    case 28:
+    case 28: // homing
       if (commandContainsChar('Z')) {
         drivePen(999.99);
         //drivePen(getFloatFromAssociatedChar('Z'));
       }
-      /*else if (commandContainsChar('X')) {
-        // X 0 fahren
-        } else if (commandContainsChar('Y')) {
-        // Y 0 fahren
-        }
-      */
       if (commandContainsChar('X')) {
         driveX(0.0);
       }
       if (commandContainsChar('Y')) {
         driveY(0.0);
       }
+    case 00: // rapid
+      if (commandContainsChar('Z')) {
+        drivePen(getFloatFromAssociatedChar('Z'));
+      }
+      if (commandContainsChar('X')) {
+        driveX(getFloatFromAssociatedChar('X'));
+      }
+      if (commandContainsChar('Y')) {
+        driveX(getFloatFromAssociatedChar('Y'));
+      }
+    case 01:
+      float x = getFloatFromAssociatedChar('X');
+      float y = getFloatFromAssociatedChar('Y');
+    // hier bresenham's line algorithm aufrufen
+    // und entsprechend fahren
+
     case -999:
       Serial.println("# switch FEHLER!");
       break;
@@ -198,3 +210,27 @@ void drivePen(float newZ) {
     penZ = newZ;
   }
 }
+
+/**
+ * Bresenham-Algorithmus Implementation für das fahren einer Linie https://de.wikipedia.org/wiki/Bresenham-Algorithmus
+ */
+ void driveLine(float nX, float nY) {
+  /*
+   void line(int x0, int y0, int x1, int y1) {
+ 
+  int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  int err = (dx>dy ? dx : -dy)/2, e2;
+ 
+  for(;;){
+    setPixel(x0,y0);
+    if (x0==x1 && y0==y1) break;
+    e2 = err;
+    if (e2 >-dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+  }
+}
+   */
+  
+ }
+ 
