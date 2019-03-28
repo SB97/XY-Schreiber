@@ -5,8 +5,8 @@
    DAC: http://henrysbench.capnfatz.com/henrys-bench/arduino-output-devices/arduino-mcp4725-digital-to-analog-converter-tutorial/
 */
 
-#include <Wire.h>
-#include <Adafruit_MCP4725.h>
+#include <Wire.h> // Bus Treiber
+#include <Adafruit_MCP4725.h> // DAC Treiber
 
 // Konstanten
 #define BAUD (57600) // Baudrate 
@@ -145,7 +145,7 @@ boolean commandContainsChar(char suchCode) {
   return false;
 }
 
-/*
+/**
     Verarbeitung des empfangenen Komandos
 */
 void processCommand() {
@@ -212,25 +212,58 @@ void drivePen(float newZ) {
 }
 
 /**
- * Bresenham-Algorithmus Implementation für das fahren einer Linie https://de.wikipedia.org/wiki/Bresenham-Algorithmus
- */
- void driveLine(float nX, float nY) {
+   Bresenham-Algorithmus Implementation für das fahren einer Linie https://de.wikipedia.org/wiki/Bresenham-Algorithmus
+   a = alte Kordinate
+   n = neue Kordinate
+*/
+void driveLine(float aX, float nX, float aY, float nY) {
+  // Vorbereitung
+  // X
+  float diffX = abs(nX - aX); // entfernung (abs=Absolute value)
+  float steigungX = aX < nX ? 1 : -1; // positive oder negative Richtung
+  // Y
+  float diffY = abs(nY - aY); // entfernung (abs=Absolute value)
+  float steigungY = aY < nY ? 1 : -1; // positive oder negative Richtung
+  // Abweichung
+  float err = diffX + diffY;
+  float err2;
+
+  while (1) {
+    // außer beim ersten durchlauf
+    driveX(aX);
+    driveY(aY);
+    // außer beim ersten durchlauf
+
+    if (aX == nX && aY == nY) { // Schleifen abbruch
+      break;
+    }
+    err2 = 2 * err;
+    if (err2 > diffY) {
+      err += diffY;
+      aX += steigungX; // berechnung für nächsten Schleifen durchgang ob eine Einheit hoch oder runter gefahren wird
+    }
+    if (err2 > diffX) {
+      err += diffX;
+      aY += steigungY; // berechnung für nächsten Schleifen durchgang ob eine Einheit hoch oder runter gefahren wird
+    }
+  }
+
+
   /*
-   void line(int x0, int y0, int x1, int y1) {
- 
-  int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
-  int err = (dx>dy ? dx : -dy)/2, e2;
- 
-  for(;;){
+    void line(int x0, int y0, int x1, int y1) {
+
+    int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+    int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
+    int err = (dx>dy ? dx : -dy)/2, e2;
+
+    for(;;){
     setPixel(x0,y0);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
     if (e2 < dy) { err += dx; y0 += sy; }
-  }
+    }
+    }
+  */
+
 }
-   */
-  
- }
- 
