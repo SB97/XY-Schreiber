@@ -13,10 +13,10 @@
 #define MAX_BUF (64) // maximale länge der eingehenden Nachrichten
 
 #define X_AUFLOESUNG (4096)
-#define X_LAENGE (200) // mm
+#define X_LAENGE (250) // mm
 #define X_TRAVEL_TIME (5000) // ms
-#define Y_AUFLOESUNG (4096/2)
-#define Y_LAENGE (150) // mm
+#define Y_AUFLOESUNG (3000)
+#define Y_LAENGE (200) // mm
 #define Y_TRAVEL_TIME (4000) // ms
 
 char buffer[MAX_BUF]; // zwischenablage
@@ -136,12 +136,15 @@ float getFloatFromAssociatedChar(char suchCode) {
 
 boolean commandContainsChar(char suchCode) {
   Serial.println("Funktion: commandContainsChar");
+  Serial.println(suchCode);
   int bufferSize = sizeof(buffer);
   for (int i = 0; i < bufferSize; i++) {
     if (buffer[i] == suchCode) {
+      Serial.println("#TRUE#");
       return true;
     }
   }
+  Serial.println("#FALSE#");
   return false;
 }
 
@@ -152,10 +155,14 @@ void processCommand() {
 
   // G-code
   int switchZahl = (int) getFloatFromAssociatedChar('G');
+  Serial.println("###");
+  Serial.println(switchZahl);
+  Serial.println("###");
 
   // TODO: die vielen getFloatFromAssociatedChar hier abfertigen
 
-  Serial.println("#" + switchZahl);
+  //Serial.println("#WUFF#" + switchZahl );
+  // Serial.println("HALLLLLLLOOOOO!!!!!!!!!!!");
 
   switch (switchZahl) {
     case 28: // homing
@@ -164,11 +171,14 @@ void processCommand() {
         //drivePen(getFloatFromAssociatedChar('Z'));
       }
       if (commandContainsChar('X')) {
-        driveX(0.0);
+        float tmp = 0;
+        driveX(tmp);
       }
       if (commandContainsChar('Y')) {
-        driveY(0.0);
+        float tmp = 0;
+        driveY(tmp);
       }
+      break;
     case 00: // rapid
       if (commandContainsChar('Z')) {
         drivePen(getFloatFromAssociatedChar('Z'));
@@ -177,14 +187,16 @@ void processCommand() {
         driveX(getFloatFromAssociatedChar('X'));
       }
       if (commandContainsChar('Y')) {
-        driveX(getFloatFromAssociatedChar('Y'));
+        driveY(getFloatFromAssociatedChar('Y'));
       }
+      break;
     case 01:
       float x = getFloatFromAssociatedChar('X');
       float y = getFloatFromAssociatedChar('Y');
-    // hier bresenham's line algorithm aufrufen
-    // und entsprechend fahren
-
+      // hier bresenham's line algorithm aufrufen
+      // und entsprechend fahren
+      driveLine(posX, x, posY, x);
+      break;
     case -999:
       Serial.println("# switch FEHLER!");
       break;
@@ -198,7 +210,7 @@ void processCommand() {
    Fährt den Stift hoch oder runter.
 */
 void drivePen(float newZ) {
-  //Serial.println("Funktion: drivePen");
+  Serial.println("Funktion: drivePen");
   if (newZ != penZ) {
     if (newZ > penZ) {
       // Stift hoch fahren
@@ -247,6 +259,9 @@ void driveLine(float aX, float nX, float aY, float nY) {
       aY += steigungY; // berechnung für nächsten Schleifen durchgang ob eine Einheit hoch oder runter gefahren wird
     }
   }
+
+  posX = nX;
+  posY = nY;
 
 
   /*
