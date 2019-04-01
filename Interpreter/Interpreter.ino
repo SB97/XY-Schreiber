@@ -57,6 +57,7 @@ void driveX2(float xTarget) {
     neuePos = (posX - diff);
   }
   int dacValue = (X_AUFLOESUNG / X_LAENGE) * neuePos;
+  //int dacValue = ((X_AUFLOESUNG / X_LAENGE) * neuePos) + 1700; // tmp fix
   dacX.setVoltage(dacValue, false);
   long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1));
   delay(d);
