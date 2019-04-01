@@ -43,6 +43,45 @@ void driveX(float xTarget) {
   delay(d);
   posX = neuePos;
 }
+/**
+   X Achsen bewegung
+*/
+void driveX2(float xTarget) {
+   // float diffX = abs(nX - aX); // entfernung (abs=Absolute value)
+  // float steigungX = aX < nX ? 1 : -1; // positive oder negative Richtung
+  float neuePos = 0;
+  float diff = abs(xTarget - posX);
+  if (xTarget > posX) {
+    neuePos = (posX + diff);
+  } else {
+    neuePos = (posX - diff);
+  }
+  int dacValue = (X_AUFLOESUNG / X_LAENGE) * neuePos;
+  dacX.setVoltage(dacValue, false);
+  long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1));
+  delay(d);
+  posX = neuePos;
+}
+
+/**
+   Y Achsen bewegung
+*/
+void driveY2(float yTarget) {
+   // float diffY = abs(nY - aY); // entfernung (abs=Absolute value)
+  // float steigungY = aY < nY ? 1 : -1; // positive oder negative Richtung
+  float neuePos = 0;
+  float diff = abs(yTarget - posY);
+  if (yTarget > posY) {
+    neuePos = (posY + diff);
+  } else {
+    neuePos = (posY - diff);
+  }
+  int dacValue = (Y_AUFLOESUNG / Y_LAENGE) * neuePos;
+  dacY.setVoltage(dacValue, false);
+  long d = (long) ((Y_AUFLOESUNG / Y_TRAVEL_TIME) * (neuePos * -1));
+  delay(d);
+  posY = neuePos;
+}
 
 /**
    Y Achsen bewegung
@@ -171,12 +210,12 @@ void processCommand() {
         //drivePen(getFloatFromAssociatedChar('Z'));
       }
       if (commandContainsChar('X')) {
-        float tmp = 0;
-        driveX(tmp);
+        dacX.setVoltage(0, false);
+        posX = 0;
       }
       if (commandContainsChar('Y')) {
-        float tmp = 0;
-        driveY(tmp);
+        dacY.setVoltage(0, false);
+        posY = 0;
       }
       break;
     case 00: // rapid
@@ -184,10 +223,10 @@ void processCommand() {
         drivePen(getFloatFromAssociatedChar('Z'));
       }
       if (commandContainsChar('X')) {
-        driveX(getFloatFromAssociatedChar('X'));
+        driveX2(getFloatFromAssociatedChar('X'));
       }
       if (commandContainsChar('Y')) {
-        driveY(getFloatFromAssociatedChar('Y'));
+        driveY2(getFloatFromAssociatedChar('Y'));
       }
       break;
     case 01:
@@ -195,7 +234,7 @@ void processCommand() {
       float y = getFloatFromAssociatedChar('Y');
       // hier bresenham's line algorithm aufrufen
       // und entsprechend fahren
-      driveLine(posX, x, posY, x);
+      driveLine((int)posX, (int)x, (int)posY, (int)x);
       break;
     case -999:
       Serial.println("# switch FEHLER!");
@@ -240,11 +279,18 @@ void driveLine(float aX, float nX, float aY, float nY) {
   float err = diffX + diffY;
   float err2;
 
+  Serial.println("Funktion: driveLine");
+
   while (1) {
-    // außer beim ersten durchlauf
+
     driveX(aX);
+    Serial.print("X: ");
+    Serial.print(aX);
+    Serial.println("");
     driveY(aY);
-    // außer beim ersten durchlauf
+    Serial.print("Y: ");
+    Serial.print(aY);
+    Serial.println("");
 
     if (aX == nX && aY == nY) { // Schleifen abbruch
       break;
