@@ -16,7 +16,7 @@
 #define X_LAENGE (250) // mm
 #define X_TRAVEL_TIME (5000) // ms
 #define Y_AUFLOESUNG (3000)
-#define Y_LAENGE (200) // mm
+#define Y_LAENGE (180) // mm
 #define Y_TRAVEL_TIME (4000) // ms
 
 char buffer[MAX_BUF]; // zwischenablage
@@ -36,18 +36,7 @@ float posY = 0; // start Y Position -> aktuelle Position
    X Achsen bewegung
 */
 void driveX(float xTarget) {
-  float neuePos = posX + xTarget;
-  int dacValue = (X_AUFLOESUNG / X_LAENGE) * neuePos;
-  dacX.setVoltage(dacValue, false);
-  long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1));
-  delay(d);
-  posX = neuePos;
-}
-/**
-   X Achsen bewegung
-*/
-void driveX2(float xTarget) {
-   // float diffX = abs(nX - aX); // entfernung (abs=Absolute value)
+  // float diffX = abs(nX - aX); // entfernung (abs=Absolute value)
   // float steigungX = aX < nX ? 1 : -1; // positive oder negative Richtung
   float neuePos = 0;
   float diff = abs(xTarget - posX);
@@ -57,7 +46,6 @@ void driveX2(float xTarget) {
     neuePos = (posX - diff);
   }
   int dacValue = (X_AUFLOESUNG / X_LAENGE) * neuePos;
-  //int dacValue = ((X_AUFLOESUNG / X_LAENGE) * neuePos) + 1700; // tmp fix
   dacX.setVoltage(dacValue, false);
   long d = (long) ((X_AUFLOESUNG / X_TRAVEL_TIME) * (neuePos * -1));
   delay(d);
@@ -67,8 +55,8 @@ void driveX2(float xTarget) {
 /**
    Y Achsen bewegung
 */
-void driveY2(float yTarget) {
-   // float diffY = abs(nY - aY); // entfernung (abs=Absolute value)
+void driveY(float yTarget) {
+  // float diffY = abs(nY - aY); // entfernung (abs=Absolute value)
   // float steigungY = aY < nY ? 1 : -1; // positive oder negative Richtung
   float neuePos = 0;
   float diff = abs(yTarget - posY);
@@ -77,18 +65,6 @@ void driveY2(float yTarget) {
   } else {
     neuePos = (posY - diff);
   }
-  int dacValue = (Y_AUFLOESUNG / Y_LAENGE) * neuePos;
-  dacY.setVoltage(dacValue, false);
-  long d = (long) ((Y_AUFLOESUNG / Y_TRAVEL_TIME) * (neuePos * -1));
-  delay(d);
-  posY = neuePos;
-}
-
-/**
-   Y Achsen bewegung
-*/
-void driveY(float yTarget) {
-  float neuePos = posY + yTarget;
   int dacValue = (Y_AUFLOESUNG / Y_LAENGE) * neuePos;
   dacY.setVoltage(dacValue, false);
   long d = (long) ((Y_AUFLOESUNG / Y_TRAVEL_TIME) * (neuePos * -1));
@@ -124,10 +100,7 @@ void loop() {
   if ( Serial.available()) {
 
     char c = Serial.read(); // empfang speichern
-
-    /* if (c == '\r\n') {
-       Serial.println("habe 'new line' empfangen!");
-      } else */if (c == ';') {
+    if (c == ';') {
       Serial.println("habe '#;#' empfangen!");
     } else {
       Serial.println("habe '" + String(c) + "' empfangen!");
@@ -140,6 +113,8 @@ void loop() {
 
     // Nachrichten ende
     if ( c == ';' ) {
+      //if ( c == '\n' ) {
+      //if ( c == ';' || c == '\n') {
 
       // debugging
       Serial.println("Befehls String #");
@@ -195,48 +170,50 @@ void processCommand() {
 
   // G-code
   int switchZahl = (int) getFloatFromAssociatedChar('G');
-  Serial.println("###");
-  Serial.println(switchZahl);
-  Serial.println("###");
+ 
+  Serial.println("# switchZahl: " + String(switchZahl));
 
-  // TODO: die vielen getFloatFromAssociatedChar hier abfertigen
-
-  //Serial.println("#WUFF#" + switchZahl );
-  // Serial.println("HALLLLLLLOOOOO!!!!!!!!!!!");
+  boolean cccZ = commandContainsChar('Z');
+  float gffacZ = getFloatFromAssociatedChar('Z');
+  boolean cccY = commandContainsChar('Y');
+  float gffacY = getFloatFromAssociatedChar('Y');
+  boolean cccX = commandContainsChar('X');
+  float gffacX = getFloatFromAssociatedChar('X');
 
   switch (switchZahl) {
     case 28: // homing
-      if (commandContainsChar('Z')) {
+      if (cccZ) {
         drivePen(999.99);
-        //drivePen(getFloatFromAssociatedChar('Z'));
       }
-      if (commandContainsChar('X')) {
+      if (cccX) {
         dacX.setVoltage(0, false);
         posX = 0;
       }
-      if (commandContainsChar('Y')) {
+      if (cccY) {
         dacY.setVoltage(0, false);
         posY = 0;
       }
       break;
     case 00: // rapid
-      if (commandContainsChar('Z')) {
-        drivePen(getFloatFromAssociatedChar('Z'));
+      if (cccZ) {
+        drivePen(gffacZ);
       }
-      if (commandContainsChar('X')) {
-        driveX2(getFloatFromAssociatedChar('X'));
+      if (cccX) {
+        driveX(getFloatFromAssociatedChar('X'));
       }
-      if (commandContainsChar('Y')) {
-        driveY2(getFloatFromAssociatedChar('Y'));
+      if (cccY) {
+        driveY(gffacY);
       }
       break;
     case 01:
-      float x = getFloatFromAssociatedChar('X');
-      float y = getFloatFromAssociatedChar('Y');
-      // hier bresenham's line algorithm aufrufen
-      // und entsprechend fahren
-      driveLine((int)posX, (int)x, (int)posY, (int)x);
-      break;
+      {
+        //float x = gffacX;
+        //float y = gffacY;
+        // hier bresenham's line algorithm aufrufen
+        // und entsprechend fahren
+        driveLine((int)posX, (int)gffacX, (int)posY, (int)gffacY);
+        break;
+      }
     case -999:
       Serial.println("# switch FEHLER!");
       break;
@@ -309,23 +286,4 @@ void driveLine(float aX, float nX, float aY, float nY) {
 
   posX = nX;
   posY = nY;
-
-
-  /*
-    void line(int x0, int y0, int x1, int y1) {
-
-    int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-    int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
-    int err = (dx>dy ? dx : -dy)/2, e2;
-
-    for(;;){
-    setPixel(x0,y0);
-    if (x0==x1 && y0==y1) break;
-    e2 = err;
-    if (e2 >-dx) { err -= dy; x0 += sx; }
-    if (e2 < dy) { err += dx; y0 += sy; }
-    }
-    }
-  */
-
 }
