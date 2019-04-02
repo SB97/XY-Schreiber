@@ -112,9 +112,9 @@ void loop() {
     }
 
     // Nachrichten ende
-    if ( c == ';' ) {
-      //if ( c == '\n' ) {
-      //if ( c == ';' || c == '\n') {
+    //if ( c == ';' ) {
+    //if ( c == '\n' ) {
+    if ( (c == '\r') || (c == '\n') ) {
 
       // debugging
       Serial.println("Befehls String #");
@@ -170,7 +170,7 @@ void processCommand() {
 
   // G-code
   int switchZahl = (int) getFloatFromAssociatedChar('G');
- 
+
   Serial.println("# switchZahl: " + String(switchZahl));
 
   boolean cccZ = commandContainsChar('Z');
@@ -205,12 +205,8 @@ void processCommand() {
         driveY(gffacY);
       }
       break;
-    case 01:
+    case 01: // line
       {
-        //float x = gffacX;
-        //float y = gffacY;
-        // hier bresenham's line algorithm aufrufen
-        // und entsprechend fahren
         driveLine((int)posX, (int)gffacX, (int)posY, (int)gffacY);
         break;
       }
@@ -221,6 +217,11 @@ void processCommand() {
       Serial.println("# switch DEFAULT!");
       break;
   }
+
+  cccZ = false;
+  cccX = false;
+  cccY = false;
+
 }
 
 /**
