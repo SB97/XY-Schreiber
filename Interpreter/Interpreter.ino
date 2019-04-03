@@ -15,7 +15,7 @@
 #define X_AUFLOESUNG (4096)
 #define X_LAENGE (250) // mm
 #define X_TRAVEL_TIME (5000) // ms
-#define Y_AUFLOESUNG (3000)
+#define Y_AUFLOESUNG (3000) // 3000?
 #define Y_LAENGE (180) // mm
 #define Y_TRAVEL_TIME (4000) // ms
 
@@ -182,9 +182,7 @@ void processCommand() {
 
   switch (switchZahl) {
     case 28: // homing
-      if (cccZ) {
-        drivePen(999.99);
-      }
+
       if (cccX) {
         dacX.setVoltage(0, false);
         posX = 0;
@@ -192,6 +190,9 @@ void processCommand() {
       if (cccY) {
         dacY.setVoltage(0, false);
         posY = 0;
+      }
+      if (cccZ) {
+        drivePen(999.99);
       }
       break;
     case 00: // rapid
@@ -246,6 +247,55 @@ void drivePen(float newZ) {
    a = alte Kordinate
    n = neue Kordinate
 */
+void driveLine(int aX, int nX, int aY, int nY) {
+  // Vorbereitung
+  // X
+  int diffX = abs(nX - aX); // entfernung (abs=Absolute value)
+  int steigungX = aX < nX ? 1 : -1; // positive oder negative Richtung
+  // Y
+  int diffY = abs(nY - aY); // entfernung (abs=Absolute value)
+  int steigungY = aY < nY ? 1 : -1; // positive oder negative Richtung
+  // Abweichung
+  int err = diffX + diffY;
+  int err2;
+
+  Serial.println("Funktion: driveLine");
+
+  while (1) {
+
+    driveX(aX);
+    Serial.print("X: ");
+    Serial.print(aX);
+    Serial.println("");
+    driveY(aY);
+    Serial.print("Y: ");
+    Serial.print(aY);
+    Serial.println("");
+
+    if (aX == nX && aY == nY) { // Schleifen abbruch
+      break;
+    }
+    err2 = 2 * err;
+    if (err2 > diffY) {
+      err += diffY;
+      aX += steigungX; // berechnung für nächsten Schleifen durchgang ob eine Einheit hoch oder runter gefahren wird
+    }
+    if (err2 > diffX) {
+      err += diffX;
+      aY += steigungY; // berechnung für nächsten Schleifen durchgang ob eine Einheit hoch oder runter gefahren wird
+    }
+  }
+
+  posX = nX;
+  posY = nY;
+}
+
+
+/**
+   Bresenham-Algorithmus Implementation für das fahren einer Linie https://de.wikipedia.org/wiki/Bresenham-Algorithmus
+   a = alte Kordinate
+   n = neue Kordinate
+
 void driveLine(float aX, float nX, float aY, float nY) {
   // Vorbereitung
   // X
@@ -288,3 +338,4 @@ void driveLine(float aX, float nX, float aY, float nY) {
   posX = nX;
   posY = nY;
 }
+*/
